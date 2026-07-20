@@ -173,8 +173,8 @@ async function loadProjects() {
                     </div>
                     <div class="proj-actions">
                         ${p.status === 'ready' && p.export_path ? `<a href="/api/projects/${p.id}/download" class="btn btn-primary btn-sm" style="padding:4px 10px;font-size:0.75rem">Download</a>` : ''}
-                        ${p.status === 'ready' ? `<button class="btn btn-secondary btn-sm" style="padding:4px 10px;font-size:0.75rem" onclick="renderProject(${p.id})">Render</button>` : ''}
-                        ${p.status === 'draft' ? `<button class="btn btn-secondary btn-sm" style="padding:4px 10px;font-size:0.75rem" onclick="renderProject(${p.id})">Render</button>` : ''}
+                        ${p.status === 'ready' ? `<button class="btn btn-secondary btn-sm" style="padding:4px 10px;font-size:0.75rem" onclick="openRenderDialog(${p.id})">Render</button>` : ''}
+                        ${p.status === 'draft' ? `<button class="btn btn-secondary btn-sm" style="padding:4px 10px;font-size:0.75rem" onclick="openRenderDialog(${p.id})">Render</button>` : ''}
                         <button class="btn btn-danger btn-sm" style="padding:4px 10px;font-size:0.75rem" onclick="deleteProject(${p.id})">Del</button>
                     </div>
                 </div>
@@ -183,13 +183,40 @@ async function loadProjects() {
     } catch (e) { toast(e.message, 'error'); }
 }
 
-async function renderProject(id) {
+let _renderProjectId = null;
+
+function openRenderDialog(id) {
+    _renderProjectId = id;
+    document.getElementById('render-music-path').value = '';
+    document.getElementById('render-music-volume').value = '0.3';
+    document.getElementById('modal-render').classList.remove('hidden');
+}
+
+async function doRender() {
+    const id = _renderProjectId;
+    if (!id) return;
+    const btn = document.getElementById('btn-do-render');
+    btn.disabled = true;
+    btn.textContent = 'Rendering...';
+
+    const body = {};
+    const musicPath = document.getElementById('render-music-path').value.trim();
+    if (musicPath) {
+        body.music_path = musicPath;
+        body.music_volume = parseFloat(document.getElementById('render-music-volume').value) || 0.3;
+    }
+
     try {
-        toast('Rendering...', 'info');
-        await API.post(`/api/projects/${id}/render`, {});
+        document.getElementById('modal-render').classList.add('hidden');
+        toast(musicPath ? 'Rendering with music...' : 'Rendering...', 'info');
+        await API.post(`/api/projects/${id}/render`, body);
         toast('Render complete!', 'success');
         loadProjects();
     } catch (e) { toast(e.message, 'error'); }
+    finally {
+        btn.disabled = false;
+        btn.textContent = 'Start Render';
+    }
 }
 
 async function deleteProject(id) {
