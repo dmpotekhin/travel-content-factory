@@ -1,161 +1,264 @@
-# Travel Content Factory
+<p align="center">
+  <img src="https://raw.githubusercontent.com/dmpotekhin/travel-content-factory/main/docs/logo.png" alt="Travel Content Factory" width="120" onerror="this.style.display='none'">
+</p>
 
-Локальный веб-инструмент для управления медиаархивом путешествий и создания контента для TikTok, Instagram Reels и Facebook. Загружайте фото и видео, извлекайте геоданные, монтируйте ролики с AI-сценариями — всё на вашем компьютере.
+<h1 align="center"> Travel Content Factory</h1>
 
-## Возможности
+<p align="center">
+  <b>Локальная фабрика контента для путешественников</b><br>
+  <sub>Архивируй фото и видео  •  Монтируй ролики с AI  •  Публикуй на TikTok, Reels, Facebook</sub>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11+-blue?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/frontend-Vanilla_JS-F7DF1E?logo=javascript&logoColor=black" alt="Vanilla JS">
+  <img src="https://img.shields.io/badge/AI-DeepSeek-4B32C3?logo=openai&logoColor=white" alt="DeepSeek">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+</p>
+
+---
+
+##   Что это
+
+**Travel Content Factory** — это твой персональный видеопродакшн на ноутбуке.
+
+Вернулся из путешествия с гигабайтами фото и видео? Загрузи всё в архив, и приложение само:
+-   Извлечёт GPS-координаты и даты из EXIF
+-   Сгруппирует медиа по странам и годам
+-   Сгенерирует сценарий, хэштеги и текст поста через AI
+-   Смонтирует ролик под TikTok, Reels или Facebook
+-   Отдаст готовый `.mp4` на скачивание
+
+Всё локально. Никаких облаков. Никаких подписок.
+
+---
+
+##   Возможности
 
 ###   Архив медиафайлов
-- Drag & drop папок или выбор в браузере
-- Извлечение метаданных через exiftool: дата съёмки, GPS-координаты, длительность, разрешение
-- Сетка с фильтрами: страна, год, тип (фото/видео), хэштеги
-- Хранение в SQLite, всё асинхронно
+
+|   |   |
+|---|---|
+| **Авто-скан папок** | Выбери папку с фото/видео — система рекурсивно обойдёт и извлечёт EXIF |
+| **Метаданные** | Дата съёмки, GPS, длительность, разрешение, размер |
+| **Фильтры** | Страна, год, тип (фото/видео), хэштеги |
+| **Хранение** | SQLite, всё асинхронно, без тормозов |
 
 ### ✂️ Три режима монтажа
-| Режим | Как работает |
-|-------|-------------|
-| **Авто** | Задаёте тему/страну/длительность → система подбирает клипы по метаданным и склеивает через FFmpeg |
-| **Ручной** | Выбираете клипы вручную, задаёте порядок и длительность |
-| **По сценарию** | Вставляете текст → AI (DeepSeek) разбивает на сцены → код подбирает клипы по EXIF |
+
+<p align="center">
+  <table>
+    <tr>
+      <td align="center" width="33%">
+        <h3>  Авто</h3>
+        <sub>Задаёшь тему и длительность</sub><br><br>
+        Система сама подбирает клипы по стране/году, нарезает FFmpeg и склеивает
+      </td>
+      <td align="center" width="33%">
+        <h3>  Ручной</h3>
+        <sub>Полный контроль</sub><br><br>
+        Выбираешь клипы вручную, задаёшь порядок, длительность и переходы
+      </td>
+      <td align="center" width="33%">
+        <h3>  По сценарию</h3>
+        <sub>AI-драматургия</sub><br><br>
+        Вставляешь текст → AI разбивает на сцены → код подбирает клипы по EXIF
+      </td>
+    </tr>
+  </table>
+</p>
 
 ###   Контент-завод
-- Поле ввода темы + выбор платформы (TikTok / Reels / Facebook)
-- Запрос к DeepSeek API → сценарий, текст поста, хэштеги
-- Копирование в один клик
+
+```
+Ты: «Завтрак в Париже, рилс на 30 секунд»
+   ↓
+ AI:  Сценарий  +  Текст поста  +  #хэштеги
+   ↓
+ Ты:  [Copy] → вставляешь в TikTok/Instagram
+```
+
+-   Поле ввода темы + выбор платформы (TikTok / Reels / Facebook)
+-   DeepSeek API возвращает готовый сценарий, цепляющий заголовок и подборку хэштегов
+-   Копирование результата в один клик
 
 ###   Экспорт
-- Рендер финального видео в папку `exports/`
-- Кнопка скачать в браузере
 
-## Скриншоты
+-   FFmpeg собирает клипы в финальный `.mp4`
+-   Видео сохраняется в `exports/`
+-   Кнопка **Download** в браузере
 
-*(добавьте свои скриншоты в `docs/screenshots/`)*
+---
 
-## Стек
+##   Стек
 
-| Слой | Технологии |
-|------|-----------|
-| **Backend** | Python 3.11+, FastAPI, SQLAlchemy (async), aiosqlite |
-| **Frontend** | HTML5 + CSS3 + Vanilla JS (без фреймворков) |
-| **AI** | DeepSeek API через httpx (архитектура позволяет заменить на локальную LLM) |
-| **Медиа** | FFmpeg (subprocess), exiftool (EXIF/GPS) |
-| **База** | SQLite (aiosqlite); готова замена на PostgreSQL одной строкой |
+<p align="center">
+  <table>
+    <tr>
+      <td align="center"> <b>Backend</b></td>
+      <td>Python 3.11+  •  FastAPI  •  SQLAlchemy 2.0 (async)  •  aiosqlite</td>
+    </tr>
+    <tr>
+      <td align="center"> <b>Frontend</b></td>
+      <td>HTML5  •  CSS3 (темная тема)  •  Vanilla JS (0 зависимостей)</td>
+    </tr>
+    <tr>
+      <td align="center"> <b>AI</b></td>
+      <td>DeepSeek API (httpx)  •  Архитектура под замену на Ollama / llama.cpp</td>
+    </tr>
+    <tr>
+      <td align="center"> <b>Медиа</b></td>
+      <td>FFmpeg  •  exiftool (EXIF/GPS)</td>
+    </tr>
+    <tr>
+      <td align="center"> <b>База</b></td>
+      <td>SQLite (aiosqlite)  •  Одна строка для миграции на PostgreSQL</td>
+    </tr>
+  </table>
+</p>
 
-## Требования
+---
 
-- macOS / Linux (на MacBook Pro 2015 i5 16GB работает)
-- Python 3.11+
-- FFmpeg: `brew install ffmpeg`
-- exiftool: `brew install exiftool`
-- DeepSeek API ключ (для AI-функций)
-
-## Быстрый старт
+##   Быстрый старт
 
 ```bash
+# 1. Клонируй репозиторий
 git clone git@github.com:dmpotekhin/travel-content-factory.git
 cd travel-content-factory
 
-# Установите внешние зависимости
+# 2. Установи внешние зависимости (macOS)
 brew install ffmpeg exiftool
 
-# Создайте .env и пропишите API-ключ
+# 3. Создай конфиг и пропиши API-ключ DeepSeek
 cp .env.example .env
-# отредактируйте DEEPSEEK_API_KEY=***
+#  → отредактируй DEEPSEEK_API_KEY=***
 
-# Запуск
+# 4. Запуск одной командой
 chmod +x start.sh
 ./start.sh
 ```
 
-Приложение откроется на **http://localhost:8000**
+**Открывай http://localhost:8000** — и ты в деле  
 
-## Конфигурация (.env)
+>   На MacBook Pro 2015 (i5, 16GB RAM) работает без GPU
 
-```env
-# DeepSeek API (обязательно для AI-функций)
-DEEPSEEK_API_KEY=*** Paths
-MEDIA_ROOT=./uploads        # куда сохраняются загруженные файлы
-EXPORT_ROOT=./exports       # куда рендерятся финальные видео
-DATABASE_URL=sqlite+aiosqlite:///./data/travel_factory.db  # (опционально)
+---
 
-# Сервер
-HOST=127.0.0.1
-PORT=8000
+## ⚙️ Конфигурация
 
-# Бета-функции
-USE_VISION=false            # анализ контента через vision-модель (пока не активно)
-```
+| Переменная | Назначение | По умолчанию |
+|---|---|---|
+| `DEEPSEEK_API_KEY` | Ключ DeepSeek API (  для AI-функций) | *обязательно* |
+| `MEDIA_ROOT` | Куда сохраняются загруженные файлы | `./uploads` |
+| `EXPORT_ROOT` | Куда рендерятся финальные видео | `./exports` |
+| `DATABASE_URL` | Строка подключения к БД | *авто-вычисляется* |
+| `HOST` | Адрес сервера | `127.0.0.1` |
+| `PORT` | Порт | `8000` |
+| `USE_VISION` | Vision-анализ кадров ( ) | `false` |
 
-Если `DATABASE_URL` не задан, путь вычисляется автоматически относительно корня проекта.
+---
 
-## API
+##   API
 
-| Метод | Путь | Описание |
-|-------|------|----------|
-| `GET` | `/api/health` | Проверка работоспособности |
-| `POST` | `/api/media/scan` | Сканировать папку (body: `{"path": "..."}`) |
-| `GET` | `/api/media/list` | Список медиа (query: `media_type`, `country`, `year`, `page`) |
-| `GET` | `/api/media/countries` | Список стран из архива |
-| `GET` | `/api/media/years` | Список годов из архива |
-| `GET` | `/api/media/{id}/thumbnail` | Превью (JPEG, генерируется FFmpeg) |
+###   Медиа
+
+| Метод | Путь | Что делает |
+|---|---|---|
+| `POST` | `/api/media/scan` | Сканировать папку и импортировать метаданные |
+| `GET` | `/api/media/list` | Список с фильтрами (`media_type`, `country`, `year`, `page`) |
+| `GET` | `/api/media/countries` | Все страны из архива |
+| `GET` | `/api/media/years` | Все годы из архива |
+| `GET` | `/api/media/{id}` | Детали медиафайла |
+| `GET` | `/api/media/{id}/thumbnail` | Превьюшка (FFmpeg → JPEG) |
 | `DELETE` | `/api/media/{id}` | Удалить медиафайл |
-| `GET` | `/api/projects` | Список проектов |
-| `POST` | `/api/projects` | Создать проект |
-| `GET` | `/api/projects/{id}` | Детали проекта |
-| `PUT` | `/api/projects/{id}` | Обновить проект |
-| `DELETE` | `/api/projects/{id}` | Удалить проект |
-| `POST` | `/api/projects/{id}/clips` | Задать список клипов |
-| `POST` | `/api/projects/{id}/render` | Рендер финального видео |
-| `GET` | `/api/projects/{id}/download` | Скачать видео |
-| `POST` | `/api/ai/generate` | Генерация сценария (body: `{"topic":"...","platform":"tiktok"}`) |
-| `POST` | `/api/ai/script-to-scenes` | Разбивка сценария на сцены |
 
-## Структура проекта
+###   Проекты
+
+| Метод | Путь | Что делает |
+|---|---|---|
+| `GET` | `/api/projects` | Список проектов |
+| `POST` | `/api/projects` | Создать проект (auto / manual / script) |
+| `GET` | `/api/projects/{id}` | Детали + список клипов |
+| `PUT` | `/api/projects/{id}` | Обновить параметры |
+| `DELETE` | `/api/projects/{id}` | Удалить |
+| `POST` | `/api/projects/{id}/clips` | Задать клипы вручную |
+| `POST` | `/api/projects/{id}/render` |   Смонтировать видео |
+| `GET` | `/api/projects/{id}/download` |   Скачать `.mp4` |
+
+###   AI
+
+| Метод | Путь | Что делает |
+|---|---|---|
+| `POST` | `/api/ai/generate` | Сгенерировать сценарий + пост + хэштеги |
+| `POST` | `/api/ai/script-to-scenes` | Разбить текст на сцены |
+
+###   Система
+
+| Метод | Путь |
+|---|---|
+| `GET` | `/api/health` |
+
+---
+
+##   Структура
 
 ```
 travel-content-factory/
-├── backend/
-│   ├── main.py              # FastAPI: lifespan, CORS, статика
-│   ├── database.py          # Async engine + session factory
-│   ├── models.py            # MediaFile, Project, ProjectClip, Generation
+│
+├──   backend/
+│   ├── main.py                   FastAPI: lifespan, CORS, mount static
+│   ├── database.py               Async engine + session factory
+│   ├── models.py                 MediaFile, Project, ProjectClip, Generation
 │   ├── routers/
-│   │   ├── media.py         # /api/media/*
-│   │   ├── projects.py      # /api/projects/*
-│   │   └── ai.py            # /api/ai/*
+│   │   ├── media.py              /api/media/*
+│   │   ├── projects.py           /api/projects/*  +  auto-match  +  render
+│   │   └── ai.py                 /api/ai/*  +  DeepSeek content generation
 │   └── services/
-│       ├── scanner.py       # Обход папок, exiftool, EXIF/GPS
-│       ├── ffmpeg.py        # trim, concat, thumbnail, frame extraction
-│       └── deepseek.py      # DeepSeek API (BaseAIClient → заменяемый)
-├── frontend/
-│   ├── index.html           # SPA: Archive / Projects / Factory
-│   ├── css/style.css        # Тёмная тема
-│   └── js/app.js            # Vanilla JS: вся логика
-├── uploads/                 # Загруженные медиафайлы
-├── exports/                 # Срендеренные видео
-├── data/                    # SQLite база
+│       ├── scanner.py            exiftool → EXIF, GPS, дата, размер
+│       ├── ffmpeg.py             trim, concat, thumbnail, extract frame
+│       └── deepseek.py           BaseAIClient → DeepSeekClient (retry, JSON mode)
+│
+├──   frontend/
+│   ├── index.html                SPA: Archive  |  Projects  |  Factory
+│   ├── css/style.css             Тёмная тема, responsive grid
+│   └── js/app.js                 Fetch API, модалки, drag & drop
+│
+├──   uploads/                    Загруженные медиа
+├──   exports/                    Готовые ролики
+├──   data/                       SQLite travel_factory.db
+│
 ├── requirements.txt
 ├── .env.example
-└── start.sh
+├── start.sh
+└── README.md
 ```
 
-## Архитектурные решения
+---
 
-- **BaseAIClient** — абстрактный класс для AI-бэкенда. Сейчас `DeepSeekClient`, легко заменить на локальную LLM (Ollama, llama.cpp)
-- **Без ORM-миграций** — таблицы создаются автоматически при старте (`Base.metadata.create_all`). Для продакшена добавить Alembic
-- **Eager loading** — связи `Project.clips` загружаются через `selectinload` для избежания `DetachedInstanceError`
-- **FFmpeg без GPU** — все флаги только CPU: `libx264`, `-preset fast`, без `-hwaccel`
-- **GPS без гарантии** — если EXIF без координат, поля `latitude/longitude/country/city` остаются `NULL`, это не ломает фильтры
+##   Архитектурные фишки
 
-## Дорожная карта
+-   **BaseAIClient** — абстрактный AI-бэкенд. Сейчас DeepSeek, завтра Ollama — замена в 2 строки
+-   **Без миграций** — таблицы создаются при старте (`Base.metadata.create_all`). Alembic добавится когда нужно
+- ⚡ **Eager loading** — `selectinload` для связей, никаких `DetachedInstanceError`
+-   **FFmpeg CPU-only** — `libx264`, `-preset fast`, без CUDA/VideoToolbox
+-   **GPS опционален** — нет координат? Не ломается, просто фильтр по стране пустой
 
-- [ ] Замена SQLite → PostgreSQL (одна строка в .env)
-- [ ] Celery для фонового рендера
-- [ ] Локальная LLM вместо DeepSeek API (Ollama)
-- [ ] Vision-анализ контента кадров
-- [ ] Reverse geocoding (GPS → страна/город)
-- [ ] Музыкальная библиотека и наложение аудио
-- [ ] Предпросмотр монтажа в браузере
-- [ ] Экспорт в несколько форматов (вертикальный/горизонтальный)
+---
 
-## Лицензия
+##   Roadmap
 
-MIT
+- [ ] PostgreSQL вместо SQLite (одна строка в `.env`)
+- [ ] Celery / фоновая очередь рендера
+- [ ] Ollama / llama.cpp вместо DeepSeek API
+- [ ] Vision: AI-анализ содержимого кадров
+- [ ] Reverse geocoding: GPS → страна / город
+- [ ]   Аудиодорожки и музыкальная библиотека
+- [ ]   Live-предпросмотр монтажа
+- [ ] Экспорт в 9:16 / 1:1 / 16:9
+
+---
+
+<p align="center">
+  <sub>Made with   for travellers • MIT License</sub>
+</p>
