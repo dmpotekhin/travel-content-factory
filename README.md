@@ -256,6 +256,37 @@ travel-content-factory/
 - ⚡ **Eager loading** — `selectinload` для связей, никаких `DetachedInstanceError`
 -   **FFmpeg CPU-only** — `libx264`, `-preset fast`, без CUDA/VideoToolbox
 -   **GPS опционален** — нет координат? Не ломается, просто фильтр по стране пустой
+-   **Hermes MCP** — AI-агент использует GitHub MCP (issues, PR, review), Playwright MCP (e2e), Perplexity MCP (web search)
+
+---
+
+##   Hermes Agent MCP
+
+Проект разрабатывается AI-агентом Hermes с подключёнными MCP-серверами:
+
+| Сервер | Инструменты | Назначение |
+|---|---|---|
+| **GitHub MCP** | `mcp_github_*` | Issues, PR, review, commits, file contents |
+| **Playwright MCP** | `mcp_playwright_*` | E2e-тесты, скриншоты, browser automation |
+| **Perplexity MCP** | `mcp_perplexity_*` | Web search через Perplexity API |
+
+Настройка в `~/.hermes/config.yaml`:
+```yaml
+mcp_servers:
+  github:
+    command: npx
+    args: [-y, '@modelcontextprotocol/server-github']
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_TOKEN}"
+  playwright:
+    command: npx
+    args: [-y, '@playwright/mcp@latest']
+  perplexity:
+    command: npx
+    args: [-y, '@perplexity-ai/mcp-server']
+    env:
+      PERPLEXITY_API_KEY: "${PERPLEXITY_API_KEY}"
+```
 
 ---
 
