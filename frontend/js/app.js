@@ -190,6 +190,9 @@ async function openRenderDialog(id) {
     // Reset
     document.getElementById('render-music-volume').value = '0.25';
     document.getElementById('vol-label').textContent = '25%';
+    document.getElementById('render-captions').checked = false;
+    document.getElementById('render-caption-text').value = '';
+    document.getElementById('caption-extra').classList.add('hidden');
     document.getElementById('btn-do-render').disabled = false;
     document.getElementById('btn-do-render').textContent = '  Start Render';
     // Set balanced preset
@@ -228,6 +231,11 @@ function onMusicSelect() {
     } else {
         presets.classList.add('hidden');
     }
+}
+
+function onCaptionsToggle() {
+    const checked = document.getElementById('render-captions').checked;
+    document.getElementById('caption-extra').classList.toggle('hidden', !checked);
 }
 
 function setMusicVolume(vol, btn) {
@@ -276,6 +284,16 @@ async function doRender() {
         body.music_path = sel.value;
         body.music_volume = parseFloat(document.getElementById('render-music-volume').value) || 0.25;
     }
+
+    const captions = document.getElementById('render-captions').checked;
+    if (captions) {
+        body.add_captions = true;
+        const captionText = document.getElementById('render-caption-text').value.trim();
+        if (captionText) body.caption_text = captionText;
+    }
+
+    const hasMusic = !!sel.value;
+    const hasCaptions = captions;
 
     try {
         document.getElementById('modal-render').classList.add('hidden');

@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from database import get_db
 from models import Project, ProjectClip, ProjectMode, ProjectStatus, MediaFile, MediaType
-from services.ffmpeg import trim_video, concat_videos, overlay_audio, normalize_audio
+from services.ffmpeg import trim_video, concat_videos, overlay_audio, normalize_audio, overlay_text
 from services.deepseek import get_ai_client
 
 logger = logging.getLogger(__name__)
@@ -332,7 +332,9 @@ async def render_project(
         raise HTTPException(status_code=400, detail="Project has no clips")
 
     music_path = data.get("music_path")
-    music_volume = float(data.get("music_volume", 0.3))
+    music_volume = float(data.get("music_volume", 0.25))
+    add_captions = data.get("add_captions", False)
+    caption_text = data.get("caption_text", "").strip()
 
     p.status = ProjectStatus.processing
     await db.commit()
@@ -340,6 +342,50 @@ async def render_project(
     os.makedirs(EXPORT_ROOT, exist_ok=True)
 
     try:
+        # ── AI caption generation ──────────────────────────────
+        captions = {}
+        if add_captions:
+            clips_list = sorted(p.clips, key=lambda c: c.order_index)
+            for clip in clips_list:
+                if clip.scene_description:
+                    captions[clip.order_index] = clip.scene_description
+                elif clip.media:
+                    # Generate caption from media metadata via AI
+                    captions[clip.order_index] = None  # placeholder
+
+            # If we have clips without descriptions and no manual caption, call AI
+            need_ai = [k for k, v in captions.items() if v is None]
+            if need_ai and not caption_text:
+                try:
+                    ai = get_ai_client()
+                    clip_infos = []
+                    for clip in clips_list:
+                        if clip.order_index in need_ai and clip.media:
+                            loc = clip.media.country or clip.media.city or "unknown"
+                            date = clip.media.date_taken.strftime("%Y-%m-%d") if clip.media.date_taken else ""
+                            clip_infos.append(
+                                f"Clip {clip.order_index}: {clip.media.filename}, "
+                                f"location={loc}, date={date}, duration={clip.duration}s"
+                            )
+                    if clip_infos:
+                        prompt = (
+                            "Generate a short on-screen caption (5-8 words max, engaging, "
+                            "suitable for TikTok/Reels) for each clip. "
+                            "Return JSON: {\"captions\": [{\"clip_index\": 0, \"text\": \"...\"}, ...]}"
+                        )
+                        user = "Clips:\n" + "\n".join(clip_infos)
+                        result = await ai.generate_json(prompt, user)
+                        ai_captions = result.get("captions", [])
+                        for ac in ai_captions:
+                            idx = ac.get("clip_index", 0)
+                            txt = ac.get("text", "")
+                            if idx in captions:
+                                captions[idx] = txt
+                except Exception as e:
+                    logger.warning(f"AI caption generation failed: {e}")
+                    # Continue without captions for these clips
+
+        # ── Render pipeline ────────────────────────────────────
         trimmed_paths = []
         with tempfile.TemporaryDirectory() as tmpdir:
             for clip in sorted(p.clips, key=lambda c: c.order_index):
@@ -357,7 +403,15 @@ async def render_project(
                     start=clip.start_time,
                     duration=clip.duration,
                 )
-                trimmed_paths.append(trim_out)
+
+                # Overlay text if captions enabled
+                clip_text = caption_text or captions.get(clip.order_index, "")
+                if add_captions and clip_text:
+                    text_out = os.path.join(tmpdir, f"clip_{clip.order_index:03d}_text.mp4")
+                    await overlay_text(trim_out, clip_text, text_out)
+                    trimmed_paths.append(text_out)
+                else:
+                    trimmed_paths.append(trim_out)
 
             if not trimmed_paths:
                 raise HTTPException(400, "No valid clips to render")
@@ -401,6 +455,7 @@ async def render_project(
             "export_path": export_path,
             "download_url": f"/api/projects/{project_id}/download",
             "music_applied": bool(music_path),
+            "captions_applied": add_captions and any(captions.values()),
         }
 
     except HTTPException:

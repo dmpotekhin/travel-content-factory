@@ -284,3 +284,75 @@ async def normalize_audio(
         raise FFmpegError(f"normalize_audio failed", stderr)
 
     return output_path
+
+
+def _escape_drawtext(s: str) -> str:
+    """Escape special characters for FFmpeg drawtext filter."""
+    return (s
+        .replace("\\", "\\\\")
+        .replace(":", "\\:")
+        .replace("'", "\\'")
+        .replace("%", "\\\\%"))
+
+
+async def overlay_text(
+    video_path: str,
+    text: str,
+    output_path: str,
+    font_size: int = 28,
+    position: str = "bottom",     # bottom, top, center
+    font_color: str = "white",
+    box_opacity: float = 0.5,
+) -> str:
+    """
+    Overlay text onto video using FFmpeg drawtext.
+
+    - Centered horizontally
+    - Semi-transparent dark background box
+    - Position: bottom (default), top, center
+    - Handles multi-line text
+    """
+    if not text.strip():
+        # No text — just copy
+        args = ["-y", "-i", video_path, "-c", "copy", output_path]
+        rc, _, stderr = await _run_ffmpeg(args, timeout=60)
+        if rc != 0:
+            raise FFmpegError("overlay_text copy failed", stderr)
+        return output_path
+
+    escaped = _escape_drawtext(text.strip())
+
+    # Position Y calculation
+    if position == "bottom":
+        y_expr = "h-th-60"
+    elif position == "top":
+        y_expr = "40"
+    else:
+        y_expr = "(h-th)/2"
+
+    drawtext = (
+        f"drawtext=text='{escaped}':"
+        f"fontsize={font_size}:"
+        f"fontcolor={font_color}:"
+        f"box=1:"
+        f"boxcolor=black@{box_opacity}:"
+        f"boxborderw=8:"
+        f"x=(w-text_w)/2:"
+        f"y={y_expr}:"
+        f"line_spacing=6"
+    )
+
+    args = [
+        "-y",
+        "-i", video_path,
+        "-vf", drawtext,
+        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-c:a", "copy",
+        output_path,
+    ]
+
+    rc, _, stderr = await _run_ffmpeg(args, timeout=300)
+    if rc != 0:
+        raise FFmpegError(f"overlay_text failed", stderr)
+
+    return output_path

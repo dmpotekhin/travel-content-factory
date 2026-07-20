@@ -88,6 +88,7 @@
 -   FFmpeg собирает клипы в финальный `.mp4`
 -     Наложение фоновой музыки (fade in/out, громкость, loop)
 -     Нормализация громкости (loudnorm, -14 LUFS)
+-   ✏️ AI-генерация и наложение текста на видео (drawtext)
 -   Видео сохраняется в `exports/`
 -   Кнопка **Download** в браузере
 
@@ -185,7 +186,7 @@ chmod +x start.sh
 | `PUT` | `/api/projects/{id}` | Обновить параметры |
 | `DELETE` | `/api/projects/{id}` | Удалить |
 | `POST` | `/api/projects/{id}/clips` | Задать клипы вручную |
-| `POST` | `/api/projects/{id}/render` |   Смонтировать видео (body: `{"music_path": "music/track.mp3", "music_volume": 0.25}`) |
+| `POST` | `/api/projects/{id}/render` |   Смонтировать видео (body: `{"music_path":"...", "add_captions":true, "caption_text":"..."}`) |
 | `GET` | `/api/projects/{id}/download` |   Скачать `.mp4` |
 
 ###   Музыка

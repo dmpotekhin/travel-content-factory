@@ -183,6 +183,18 @@
                   Loop · Fade in 1.5s · Fade out 2s · Normalize −14 LUFS · Original audio −6dB
             </div>
 
+            <div class="form-group" style="margin-top:12px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="render-captions" onchange="onCaptionsToggle()">
+                    <span>  AI-generated text captions on video</span>
+                </label>
+                <div id="caption-extra" class="hidden" style="margin-top:6px">
+                    <input type="text" id="render-caption-text" placeholder="Or type your own caption for all clips..."
+                           style="width:100%;padding:8px;background:#0f0f14;border:1px solid #333;color:#e0e0e0;border-radius:6px;font-size:0.85rem">
+                    <small style="color:#666;font-size:0.7rem">Leave empty for AI auto-generation. One text per clip.</small>
+                </div>
+            </div>
+
             <button id="btn-do-render" class="btn btn-primary btn-full" onclick="doRender()">  Start Render</button>
         </div>
     </div>
