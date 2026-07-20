@@ -185,8 +185,16 @@ chmod +x start.sh
 | `PUT` | `/api/projects/{id}` | Обновить параметры |
 | `DELETE` | `/api/projects/{id}` | Удалить |
 | `POST` | `/api/projects/{id}/clips` | Задать клипы вручную |
-| `POST` | `/api/projects/{id}/render` |   Смонтировать видео (body: `{"music_path": "music/track.mp3", "music_volume": 0.3}`) |
+| `POST` | `/api/projects/{id}/render` |   Смонтировать видео (body: `{"music_path": "music/track.mp3", "music_volume": 0.25}`) |
 | `GET` | `/api/projects/{id}/download` |   Скачать `.mp4` |
+
+###   Музыка
+
+| Метод | Путь | Что делает |
+|---|---|---|
+| `GET` | `/api/music/list` | Список треков с длительностью и размером |
+| `POST` | `/api/music/upload` | Загрузить трек (multipart `file`) |
+| `DELETE` | `/api/music/{filename}` | Удалить трек |
 
 ###   AI
 
@@ -215,10 +223,11 @@ travel-content-factory/
 │   ├── routers/
 │   │   ├── media.py              /api/media/*
 │   │   ├── projects.py           /api/projects/*  +  auto-match  +  render
-│   │   └── ai.py                 /api/ai/*  +  DeepSeek content generation
+│   │   ├── ai.py                 /api/ai/*  +  DeepSeek content generation
+│   │   └── music.py              /api/music/*  +  upload/list/delete
 │   └── services/
 │       ├── scanner.py            exiftool → EXIF, GPS, дата, размер
-│       ├── ffmpeg.py             trim, concat, thumbnail, extract frame
+│       ├── ffmpeg.py             trim, concat, overlay_audio, normalize_audio
 │       └── deepseek.py           BaseAIClient → DeepSeekClient (retry, JSON mode)
 │
 ├──   frontend/
