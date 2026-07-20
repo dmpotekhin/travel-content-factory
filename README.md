@@ -86,6 +86,8 @@
 ###   Экспорт
 
 -   FFmpeg собирает клипы в финальный `.mp4`
+-     Наложение фоновой музыки (fade in/out, громкость, loop)
+-     Нормализация громкости (loudnorm, -14 LUFS)
 -   Видео сохраняется в `exports/`
 -   Кнопка **Download** в браузере
 
@@ -183,7 +185,7 @@ chmod +x start.sh
 | `PUT` | `/api/projects/{id}` | Обновить параметры |
 | `DELETE` | `/api/projects/{id}` | Удалить |
 | `POST` | `/api/projects/{id}/clips` | Задать клипы вручную |
-| `POST` | `/api/projects/{id}/render` |   Смонтировать видео |
+| `POST` | `/api/projects/{id}/render` |   Смонтировать видео (body: `{"music_path": "music/track.mp3", "music_volume": 0.3}`) |
 | `GET` | `/api/projects/{id}/download` |   Скачать `.mp4` |
 
 ###   AI
@@ -226,6 +228,7 @@ travel-content-factory/
 │
 ├──   uploads/                    Загруженные медиа
 ├──   exports/                    Готовые ролики
+├──   music/                      Фоновая музыка (.mp3)
 ├──   data/                       SQLite travel_factory.db
 │
 ├── requirements.txt

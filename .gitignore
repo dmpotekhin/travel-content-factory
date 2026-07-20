@@ -12,9 +12,12 @@ __pycache__/
 data/*.db
 uploads/*
 exports/*
+music/*
 !uploads/.gitkeep
 !exports/.gitkeep
 !data/.gitkeep
+!music/.gitkeep
+!music/README.md
 
 # IDE
 .idea/

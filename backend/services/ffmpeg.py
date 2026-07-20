@@ -182,3 +182,105 @@ async def create_thumbnail(
     if rc != 0:
         raise FFmpegError(f"create_thumbnail failed for {input_path}", stderr)
     return output_path
+
+
+async def get_duration(filepath: str) -> float:
+    """Get media duration in seconds via ffprobe. Returns 0.0 on failure."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            filepath,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
+        if proc.returncode == 0:
+            return float(stdout.decode("utf-8", errors="replace").strip())
+    except Exception as e:
+        logger.warning(f"get_duration failed for {filepath}: {e}")
+    return 0.0
+
+
+async def overlay_audio(
+    video_path: str,
+    music_path: str,
+    output_path: str,
+    music_volume: float = 0.3,
+    original_volume: float = 0.8,
+    fade_in: float = 1.5,
+    fade_out: float = 2.0,
+) -> str:
+    """
+    Overlay background music onto a video.
+
+    - Loops music to match video duration
+    - Fades music in/out
+    - Mixes original audio with music at specified volumes
+    - Preserves video stream (copy)
+    """
+    if not os.path.exists(music_path):
+        raise FFmpegError(f"Music file not found: {music_path}")
+    if not os.path.exists(video_path):
+        raise FFmpegError(f"Video file not found: {video_path}")
+
+    duration = await get_duration(video_path)
+    if duration <= 0:
+        raise FFmpegError(f"Cannot determine duration of: {video_path}")
+
+    # Build filter: loop music → fade in/out → adjust volume → mix with original
+    # Strategy: use amovie to loop music, then amix with original audio
+    args = [
+        "-y",
+        "-i", video_path,
+        "-stream_loop", "-1",           # loop music infinitely
+        "-i", music_path,
+        "-filter_complex",
+        (
+            f"[1:a]volume={music_volume},"
+            f"afade=t=in:d={fade_in},"
+            f"afade=t=out:st={duration - fade_out}:d={fade_out}"
+            f"[music];"
+            f"[0:a]volume={original_volume}[orig];"
+            f"[orig][music]amix=inputs=2:duration=first:dropout_transition=2[audio]"
+        ),
+        "-map", "0:v",                  # keep video from first input
+        "-map", "[audio]",              # use mixed audio
+        "-c:v", "copy",                 # no video re-encode
+        "-c:a", "aac", "-b:a", "192k",  # encode mixed audio
+        "-shortest",                    # stop at shortest input (video)
+        "-t", str(duration),            # explicit duration cap
+        output_path,
+    ]
+
+    rc, _, stderr = await _run_ffmpeg(args, timeout=600)
+    if rc != 0:
+        raise FFmpegError(f"overlay_audio failed", stderr)
+
+    return output_path
+
+
+async def normalize_audio(
+    video_path: str,
+    output_path: str,
+    target_level: float = -14.0,   # LUFS target for social media
+) -> str:
+    """
+    Normalize audio loudness to a target LUFS level.
+    Uses loudnorm filter. Good for social media consistency.
+    """
+    args = [
+        "-y",
+        "-i", video_path,
+        "-af", f"loudnorm=I={target_level}:TP=-1.0:LRA=11",
+        "-c:v", "copy",
+        "-c:a", "aac", "-b:a", "192k",
+        output_path,
+    ]
+
+    rc, _, stderr = await _run_ffmpeg(args, timeout=300)
+    if rc != 0:
+        raise FFmpegError(f"normalize_audio failed", stderr)
+
+    return output_path

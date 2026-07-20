@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from database import get_db
 from models import Project, ProjectClip, ProjectMode, ProjectStatus, MediaFile, MediaType
-from services.ffmpeg import trim_video, concat_videos
+from services.ffmpeg import trim_video, concat_videos, overlay_audio, normalize_audio
 from services.deepseek import get_ai_client
 
 logger = logging.getLogger(__name__)
@@ -317,8 +317,12 @@ async def _script_to_scenes(project: Project, db: AsyncSession):
 # ── Render ────────────────────────────────────────────────────────
 
 @router.post("/{project_id}/render")
-async def render_project(project_id: int, db: AsyncSession = Depends(get_db)):
-    """Render final video from project clips."""
+async def render_project(
+    project_id: int,
+    data: dict = {},
+    db: AsyncSession = Depends(get_db),
+):
+    """Render final video from project clips. Optional: data = {"music_path": "music/track.mp3", "music_volume": 0.3}"""
     q = select(Project).where(Project.id == project_id)
     result = await db.execute(q)
     p = result.scalar_one_or_none()
@@ -326,6 +330,9 @@ async def render_project(project_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Project not found")
     if not p.clips:
         raise HTTPException(status_code=400, detail="Project has no clips")
+
+    music_path = data.get("music_path")
+    music_volume = float(data.get("music_volume", 0.3))
 
     p.status = ProjectStatus.processing
     await db.commit()
@@ -357,7 +364,33 @@ async def render_project(project_id: int, db: AsyncSession = Depends(get_db)):
 
             export_name = f"project_{p.id}_{p.name.replace(' ', '_')}.mp4"
             export_path = os.path.join(EXPORT_ROOT, export_name)
-            await concat_videos(trimmed_paths, export_path)
+
+            # Step 1: concat clips
+            concat_out = export_path
+            if music_path:
+                concat_out = os.path.join(tmpdir, "concat_temp.mp4")
+            await concat_videos(trimmed_paths, concat_out)
+
+            # Step 2: overlay music (optional)
+            if music_path:
+                music_abs = music_path
+                if not os.path.isabs(music_abs):
+                    music_abs = os.path.join(os.path.dirname(__file__), "..", "..", music_path)
+                    music_abs = os.path.abspath(music_abs)
+                if not os.path.exists(music_abs):
+                    raise HTTPException(400, f"Music file not found: {music_abs}")
+
+                with_music = os.path.join(tmpdir, "with_music.mp4")
+                await overlay_audio(concat_out, music_abs, with_music, music_volume=music_volume)
+
+                # Step 3: normalize
+                await normalize_audio(with_music, export_path)
+
+            elif not music_path:
+                # Still normalize even without music
+                normalized = os.path.join(tmpdir, "normalized.mp4")
+                await normalize_audio(concat_out, normalized)
+                os.rename(normalized, export_path)
 
         p.export_path = export_path
         p.status = ProjectStatus.ready
@@ -367,8 +400,11 @@ async def render_project(project_id: int, db: AsyncSession = Depends(get_db)):
             "status": "ready",
             "export_path": export_path,
             "download_url": f"/api/projects/{project_id}/download",
+            "music_applied": bool(music_path),
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Render failed for project {project_id}: {e}")
         p.status = ProjectStatus.error
