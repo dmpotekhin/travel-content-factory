@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Content Factory</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="app">
+    <!-- Header -->
+    <header class="header">
+        <h1 class="logo">Travel Content Factory</h1>
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="archive">Archive</button>
+            <button class="nav-tab" data-tab="projects">Projects</button>
+            <button class="nav-tab" data-tab="factory">Content Factory</button>
+        </nav>
+    </header>
+
+    <!-- Archive Tab -->
+    <section id="tab-archive" class="tab-content active">
+        <div class="toolbar">
+            <div class="filter-group">
+                <select id="filter-type">
+                    <option value="">All types</option>
+                    <option value="photo">Photos</option>
+                    <option value="video">Videos</option>
+                </select>
+                <select id="filter-country">
+                    <option value="">All countries</option>
+                </select>
+                <select id="filter-year">
+                    <option value="">All years</option>
+                </select>
+                <input type="text" id="filter-hashtag" placeholder="Hashtag...">
+            </div>
+            <div class="action-group">
+                <button id="btn-scan" class="btn btn-secondary">Scan Folder</button>
+                <label class="btn btn-primary">
+                    Upload Files
+                    <input type="file" id="file-upload" multiple accept="image/*,video/*" hidden>
+                </label>
+            </div>
+        </div>
+
+        <div id="media-grid" class="media-grid">
+            <div class="empty-state">No media yet. Scan a folder or upload files.</div>
+        </div>
+
+        <div id="pagination" class="pagination"></div>
+    </section>
+
+    <!-- Projects Tab -->
+    <section id="tab-projects" class="tab-content">
+        <div class="toolbar">
+            <h2>Montage Projects</h2>
+            <button id="btn-new-project" class="btn btn-primary">+ New Project</button>
+        </div>
+        <div id="projects-list" class="projects-list">
+            <div class="empty-state">No projects yet.</div>
+        </div>
+    </section>
+
+    <!-- Content Factory Tab -->
+    <section id="tab-factory" class="tab-content">
+        <div class="factory-layout">
+            <div class="factory-form">
+                <h2>Generate Content</h2>
+                <div class="form-group">
+                    <label>Topic</label>
+                    <textarea id="factory-topic" rows="3" placeholder="e.g., A day in Paris, street food tour..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Platform</label>
+                    <div class="platform-buttons">
+                        <button class="platform-btn" data-platform="tiktok">TikTok</button>
+                        <button class="platform-btn active" data-platform="reels">Reels</button>
+                        <button class="platform-btn" data-platform="facebook">Facebook</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Target duration (seconds)</label>
+                    <input type="number" id="factory-duration" value="30" min="5" max="180">
+                </div>
+                <button id="btn-generate" class="btn btn-primary btn-full">Generate Script & Hashtags</button>
+            </div>
+
+            <div id="factory-result" class="factory-result">
+                <div class="empty-state">Enter a topic and click Generate.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- New Project Modal -->
+    <div id="modal-project" class="modal hidden">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>New Project</h2>
+            <div class="form-group">
+                <label>Project Name</label>
+                <input type="text" id="proj-name" placeholder="My Travel Video">
+            </div>
+            <div class="form-group">
+                <label>Mode</label>
+                <select id="proj-mode">
+                    <option value="manual">Manual — pick clips yourself</option>
+                    <option value="auto">Auto — system selects clips</option>
+                    <option value="script">By Script — AI breaks script into scenes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Platform</label>
+                <select id="proj-platform">
+                    <option value="tiktok">TikTok</option>
+                    <option value="reels">Reels</option>
+                    <option value="facebook">Facebook</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Target Duration (seconds)</label>
+                <input type="number" id="proj-duration" value="30" min="5" max="300">
+            </div>
+            <div id="proj-script-group" class="form-group hidden">
+                <label>Script Text</label>
+                <textarea id="proj-script" rows="4" placeholder="Paste your script here..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Country Filter (optional)</label>
+                <select id="proj-country"><option value="">Any</option></select>
+            </div>
+            <div class="form-group">
+                <label>Year Filter (optional)</label>
+                <select id="proj-year"><option value="">Any</option></select>
+            </div>
+            <button id="btn-create-project" class="btn btn-primary btn-full">Create Project</button>
+        </div>
+    </div>
+
+    <!-- Project Detail Modal -->
+    <div id="modal-detail" class="modal hidden">
+        <div class="modal-content modal-wide">
+            <span class="modal-close">&times;</span>
+            <div id="detail-content"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
