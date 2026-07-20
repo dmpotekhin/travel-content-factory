@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from database import engine
 from models import Base
-from routers import media, projects, ai
+from routers import media, projects, ai, music
 
 logging.basicConfig(
     level=logging.INFO,
@@ -67,6 +67,7 @@ app.add_middleware(
 app.include_router(media.router)
 app.include_router(projects.router)
 app.include_router(ai.router)
+app.include_router(music.router)
 
 # Health check — must be before static mount
 @app.get("/api/health")

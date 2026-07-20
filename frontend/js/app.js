@@ -185,11 +185,82 @@ async function loadProjects() {
 
 let _renderProjectId = null;
 
-function openRenderDialog(id) {
+async function openRenderDialog(id) {
     _renderProjectId = id;
-    document.getElementById('render-music-path').value = '';
-    document.getElementById('render-music-volume').value = '0.3';
+    // Reset
+    document.getElementById('render-music-volume').value = '0.25';
+    document.getElementById('vol-label').textContent = '25%';
+    document.getElementById('btn-do-render').disabled = false;
+    document.getElementById('btn-do-render').textContent = '  Start Render';
+    // Set balanced preset
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    const balanced = document.querySelector('.preset-btn[data-vol="0.25"]');
+    if (balanced) balanced.classList.add('active');
+
+    // Load tracks
+    const sel = document.getElementById('render-music-select');
+    sel.innerHTML = '<option value="">— No music —</option>';
+    document.getElementById('music-presets').classList.add('hidden');
+
+    try {
+        const data = await API.get('/api/music/list');
+        if (data.tracks.length) {
+            data.tracks.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.path;
+                const dur = t.duration ? ` [${t.duration}s]` : '';
+                const size = ` (${t.size_mb}MB)`;
+                opt.textContent = `${t.filename}${dur}${size}`;
+                sel.appendChild(opt);
+            });
+        }
+    } catch (e) { /* tracks list failed — dropdown stays empty */ }
+
     document.getElementById('modal-render').classList.remove('hidden');
+}
+
+function onMusicSelect() {
+    const sel = document.getElementById('render-music-select');
+    const presets = document.getElementById('music-presets');
+    if (sel.value) {
+        presets.classList.remove('hidden');
+        setMusicVolume(0.25, document.querySelector('.preset-btn[data-vol="0.25"]'));
+    } else {
+        presets.classList.add('hidden');
+    }
+}
+
+function setMusicVolume(vol, btn) {
+    document.getElementById('render-music-volume').value = vol;
+    document.getElementById('vol-label').textContent = Math.round(vol * 100) + '%';
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+}
+
+async function uploadMusic() {
+    const input = document.getElementById('music-upload-input');
+    if (!input.files.length) return;
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        toast(`Uploading ${file.name}...`, 'info');
+        const r = await fetch('/api/music/upload', { method: 'POST', body: formData });
+        if (!r.ok) throw new Error(await r.text());
+        const data = await r.json();
+        toast(`Uploaded!`, 'success');
+
+        // Refresh dropdown and select the new track
+        const sel = document.getElementById('render-music-select');
+        const opt = document.createElement('option');
+        opt.value = data.path;
+        opt.textContent = `${data.filename} (${data.size_mb}MB)`;
+        sel.appendChild(opt);
+        sel.value = data.path;
+        onMusicSelect();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { input.value = ''; }
 }
 
 async function doRender() {
@@ -200,22 +271,22 @@ async function doRender() {
     btn.textContent = 'Rendering...';
 
     const body = {};
-    const musicPath = document.getElementById('render-music-path').value.trim();
-    if (musicPath) {
-        body.music_path = musicPath;
-        body.music_volume = parseFloat(document.getElementById('render-music-volume').value) || 0.3;
+    const sel = document.getElementById('render-music-select');
+    if (sel.value) {
+        body.music_path = sel.value;
+        body.music_volume = parseFloat(document.getElementById('render-music-volume').value) || 0.25;
     }
 
     try {
         document.getElementById('modal-render').classList.add('hidden');
-        toast(musicPath ? 'Rendering with music...' : 'Rendering...', 'info');
+        toast(body.music_path ? 'Rendering with music...' : 'Rendering...', 'info');
         await API.post(`/api/projects/${id}/render`, body);
         toast('Render complete!', 'success');
         loadProjects();
     } catch (e) { toast(e.message, 'error'); }
     finally {
         btn.disabled = false;
-        btn.textContent = 'Start Render';
+        btn.textContent = '  Start Render';
     }
 }
 

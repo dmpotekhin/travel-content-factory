@@ -1,6 +1,7 @@
 /* ── Reset & Base ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 15px; }
+.hidden { display: none !important; }
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: #0f0f14;
@@ -387,3 +388,25 @@ body {
 ::-webkit-scrollbar-track { background: #0f0f14; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* ── Preset Buttons ─────────────────────────────────────── */
+.preset-btn {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #333;
+    background: #0f0f14;
+    color: #888;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 500;
+    transition: all 0.15s;
+}
+.preset-btn:hover { border-color: #555; color: #ccc; }
+.preset-btn.active { border-color: #7c5cfc; color: #7c5cfc; background: #7c5cfc11; }
+
+/* ── Track info in dropdown ─────────────────────────────── */
+.track-option {
+    font-family: monospace;
+    font-size: 0.82rem;
+}
