@@ -6,10 +6,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from services.abacus import get_image_client, GENERATED_DIR
+from database import get_db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/images", tags=["images"])
@@ -101,9 +102,11 @@ async def serve_image(filename: str):
 
 
 @router.post("/generate-cover")
-async def generate_cover(data: dict):
+async def generate_cover(data: dict, db=Depends(get_db)):
     """Generate a cover image for a project."""
-    from database import get_db
+    from sqlalchemy import select
+    from models import Project
+
     project_id = data.get("project_id")
     prompt_override = data.get("prompt_override", "").strip()
 
@@ -113,20 +116,14 @@ async def generate_cover(data: dict):
     # Build prompt from project info
     prompt = prompt_override
     if not prompt:
-        # We need the DB session — use it inline
-        from database import SessionLocal
-        from sqlalchemy import select
-        from models import Project
-
-        async with SessionLocal() as db:
-            q = select(Project).where(Project.id == project_id)
-            result = await db.execute(q)
-            project = result.scalar_one_or_none()
-            if not project:
-                raise HTTPException(status_code=404, detail="Project not found")
-            platform = project.platform or "social media"
-            name = project.name or "travel"
-            prompt = f"Eye-catching thumbnail for a {platform} video titled '{name}'. Travel theme, vibrant colors, cinematic style, 16:9 composition."
+        q = select(Project).where(Project.id == project_id)
+        result = await db.execute(q)
+        project = result.scalar_one_or_none()
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        platform = project.platform or "social media"
+        name = project.name or "travel"
+        prompt = f"Eye-catching thumbnail for a {platform} video titled '{name}'. Travel theme, vibrant colors, cinematic style, 16:9 composition."
 
     client = get_image_client()
     if not client.api_key:
