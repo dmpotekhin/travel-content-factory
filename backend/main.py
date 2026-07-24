@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from database import engine
 from models import Base
-from routers import media, projects, ai, music
+from routers import media, projects, ai, music, images
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,7 +34,8 @@ async def lifespan(app: FastAPI):
     # Ensure directories
     for d in [os.getenv("MEDIA_ROOT", "./uploads"),
               os.getenv("EXPORT_ROOT", "./exports"),
-              "./data"]:
+              "./data",
+              "generated"]:
         Path(d).mkdir(parents=True, exist_ok=True)
 
     yield
@@ -43,6 +44,9 @@ async def lifespan(app: FastAPI):
     from services.deepseek import _ai_client
     if _ai_client:
         await _ai_client.close()
+    from services.abacus import _image_client
+    if _image_client:
+        await _image_client.close()
     await engine.dispose()
     logger.info("Shutdown complete")
 
@@ -68,6 +72,7 @@ app.include_router(media.router)
 app.include_router(projects.router)
 app.include_router(ai.router)
 app.include_router(music.router)
+app.include_router(images.router)
 
 # Health check — must be before static mount
 @app.get("/api/health")
