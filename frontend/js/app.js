@@ -15,6 +15,8 @@ const state = {
     archivePage: 1,
     filters: { media_type: '', country: '', year: '', hashtag: '' },
     selectedPlatform: 'reels',
+    imgAspect: 'square',
+    imgPage: 1,
 };
 
 // ── Init ───────────────────────────────────────────────────
@@ -23,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initFilters();
     initProjectModal();
     initFactory();
+    initImageFactory();
     loadMedia();
     loadProjects();
     loadFilterOptions();
@@ -38,6 +41,7 @@ function initTabs() {
             document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
             document.getElementById(`tab-${state.tab}`).classList.add('active');
             if (state.tab === 'projects') loadProjects();
+            if (state.tab === 'images') { loadImageGallery(); }
         });
     });
 }
@@ -296,6 +300,21 @@ async function doRender() {
     const hasCaptions = captions;
 
     try {
+        // Generate cover if requested
+        const generateCover = document.getElementById('render-cover').checked;
+        if (generateCover) {
+            try {
+                const coverData = await API.post('/api/images/generate-cover', {
+                    project_id: id,
+                });
+                body.cover_image_path = coverData.path;
+                toast('Cover image generated!', 'success');
+            } catch (e) {
+                toast(`Cover generation failed: ${e.message}`, 'error');
+                // Continue without cover — non-fatal
+            }
+        }
+
         document.getElementById('modal-render').classList.add('hidden');
         toast(body.music_path ? 'Rendering with music...' : 'Rendering...', 'info');
         await API.post(`/api/projects/${id}/render`, body);
@@ -441,6 +460,13 @@ async function generate() {
                 <h3>Hashtags <button class="copy-btn" onclick="copyText(this, ${JSON.stringify(data.hashtags.join(' ')).replace(/"/g, '&quot;')})">Copy</button></h3>
                 <div class="hashtag-list">${data.hashtags.map(h => `<span class="hashtag-item">${esc(h)}</span>`).join('')}</div>
             </div>` : ''}
+            <div class="result-section" style="margin-top:12px;padding-top:12px;border-top:1px solid #222">
+                <button class="btn btn-secondary" id="btn-gen-img-from-topic"
+                        onclick="generateImageFromTopic(${JSON.stringify(data.topic).replace(/\"/g, '&quot;')})">
+                    Generate Image for this Topic
+                </button>
+                <div id="topic-img-result" style="margin-top:12px"></div>
+            </div>
         `;
 
         toast('Generation complete!', 'success');
@@ -458,6 +484,144 @@ function copyText(btn, text) {
         btn.textContent = 'Copied!';
         setTimeout(() => btn.textContent = 'Copy', 1500);
     }).catch(() => toast('Copy failed', 'error'));
+}
+
+// ── Image Factory ───────────────────────────────────────────
+function initImageFactory() {
+    document.querySelectorAll('#img-aspect-buttons .platform-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#img-aspect-buttons .platform-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.imgAspect = btn.dataset.aspect;
+        });
+    });
+
+    document.getElementById('btn-generate-image').addEventListener('click', generateImage);
+}
+
+async function generateImage() {
+    const prompt = document.getElementById('img-prompt').value.trim();
+    if (!prompt) { toast('Enter a prompt', 'error'); return; }
+
+    const btn = document.getElementById('btn-generate-image');
+    const loading = document.getElementById('img-loading');
+    const resultEl = document.getElementById('img-result');
+
+    btn.disabled = true;
+    loading.classList.remove('hidden');
+    resultEl.innerHTML = '';
+
+    const model = document.getElementById('img-model').value || undefined;
+
+    try {
+        const data = await API.post('/api/images/generate', {
+            prompt,
+            aspect_ratio: state.imgAspect,
+            model,
+        });
+
+        resultEl.innerHTML = `
+            <div class="img-result-header">
+                <span class="img-meta">${data.model} · ${data.width}x${data.height}</span>
+                <button class="btn btn-secondary btn-sm" onclick="downloadImage('${data.url}', '${data.path.split('/').pop()}')">Download</button>
+            </div>
+            <img src="${data.url}" alt="${esc(data.prompt)}" loading="lazy">
+            <div class="img-meta">${esc(data.prompt)}</div>
+        `;
+
+        toast('Image generated!', 'success');
+        document.getElementById('img-prompt').value = '';
+        loadImageGallery();
+    } catch (e) {
+        resultEl.innerHTML = `<div class="empty-state">Error: ${esc(e.message)}</div>`;
+        toast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        loading.classList.add('hidden');
+    }
+}
+
+async function generateImageFromTopic(topic) {
+    const resultEl = document.getElementById('topic-img-result');
+    resultEl.innerHTML = '<div style="color:#7c5cfc;padding:8px">Generating image...</div>';
+
+    try {
+        const data = await API.post('/api/images/generate', {
+            prompt: `Travel photo for: ${topic}. Cinematic style, vibrant colors, professional photography.`,
+            aspect_ratio: 'landscape',
+        });
+        resultEl.innerHTML = `<img src="${data.url}" alt="${esc(topic)}" style="max-width:100%;border-radius:8px;border:1px solid #333;margin-top:8px">`;
+    } catch (e) {
+        resultEl.innerHTML = `<div style="color:#e74c3c">Error: ${esc(e.message)}</div>`;
+    }
+}
+
+async function loadImageGallery(page = 1) {
+    state.imgPage = page;
+    const grid = document.getElementById('img-gallery');
+
+    try {
+        const data = await API.get(`/api/images/list?page=${page}&page_size=20`);
+        if (!data.images.length) {
+            grid.innerHTML = '<div class="empty-state">No images generated yet.</div>';
+        } else {
+            grid.innerHTML = data.images.map(img => `
+                <div class="media-card" onclick="showImagePreview('${img.url}', '${esc(img.filename)}', '${img.model}', ${img.size_bytes})">
+                    <img src="${img.url}" alt="${esc(img.filename)}" loading="lazy"
+                         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22140%22><rect fill=%22%23111%22 width=%22200%22 height=%22140%22/><text fill=%22%23666%22 x=%22100%22 y=%2275%22 text-anchor=%22middle%22 font-size=%2212%22>No preview</text></svg>'">
+                    <div class="card-body">
+                        <div class="card-name">${img.model}</div>
+                        <div class="card-meta">
+                            <span>${formatBytes(img.size_bytes)}</span>
+                            <span>${img.created_at ? img.created_at.slice(0,10) : ''}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        const pages = Math.ceil(data.total / data.page_size);
+        const pagEl = document.getElementById('img-pagination');
+        if (pages <= 1) { pagEl.innerHTML = ''; return; }
+        let html = '';
+        for (let i = 1; i <= Math.min(pages, 10); i++) {
+            html += `<button class="${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        pagEl.innerHTML = html;
+        pagEl.querySelectorAll('button').forEach(b => {
+            b.addEventListener('click', () => loadImageGallery(parseInt(b.dataset.page)));
+        });
+    } catch (e) {
+        grid.innerHTML = `<div class="empty-state">Error: ${esc(e.message)}</div>`;
+    }
+}
+
+function showImagePreview(url, filename, model, sizeBytes) {
+    document.getElementById('img-result').innerHTML = `
+        <div class="img-result-header">
+            <span class="img-meta">${model} · ${formatBytes(sizeBytes)}</span>
+            <button class="btn btn-secondary btn-sm" onclick="downloadImage('${url}', '${esc(filename)}')">Download</button>
+        </div>
+        <img src="${url}" alt="${esc(filename)}" style="max-width:100%;border-radius:8px;border:1px solid #333">
+    `;
+}
+
+function downloadImage(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function formatBytes(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    let size = bytes;
+    while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
+    return size.toFixed(1) + ' ' + units[i];
 }
 
 // ── Utilities ──────────────────────────────────────────────

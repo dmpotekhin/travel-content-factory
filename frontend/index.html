@@ -16,6 +16,7 @@
             <button class="nav-tab active" data-tab="archive">Archive</button>
             <button class="nav-tab" data-tab="projects">Projects</button>
             <button class="nav-tab" data-tab="factory">Content Factory</button>
+            <button class="nav-tab" data-tab="images">Image Factory</button>
         </nav>
     </header>
 
@@ -90,6 +91,53 @@
             <div id="factory-result" class="factory-result">
                 <div class="empty-state">Enter a topic and click Generate.</div>
             </div>
+        </div>
+    </section>
+
+    <!-- Image Factory Tab -->
+    <section id="tab-images" class="tab-content">
+        <div class="factory-layout">
+            <div class="factory-form">
+                <h2>Generate Images</h2>
+                <div class="form-group">
+                    <label>Prompt</label>
+                    <textarea id="img-prompt" rows="3" placeholder="e.g., Sunset over Santorini with blue domes, cinematic style..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Aspect Ratio</label>
+                    <div class="platform-buttons" id="img-aspect-buttons">
+                        <button class="platform-btn active" data-aspect="square">Square</button>
+                        <button class="platform-btn" data-aspect="landscape">Landscape</button>
+                        <button class="platform-btn" data-aspect="portrait">Portrait</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Model (optional)</label>
+                    <select id="img-model">
+                        <option value="">flux2_pro (default)</option>
+                        <option value="flux_pro_ultra">FLUX Pro Ultra</option>
+                        <option value="midjourney">MidJourney</option>
+                        <option value="dalle">DALL-E</option>
+                        <option value="nano_banana_pro">Nano Banana Pro</option>
+                    </select>
+                </div>
+                <button id="btn-generate-image" class="btn btn-primary btn-full">Generate Image</button>
+                <div id="img-loading" class="hidden" style="text-align:center;padding:20px;color:#7c5cfc">
+                    Generating... this may take 10-30 seconds.
+                </div>
+            </div>
+
+            <div id="img-result" class="factory-result">
+                <div class="empty-state">Enter a prompt and click Generate.</div>
+            </div>
+        </div>
+
+        <div class="gallery-section">
+            <h3>Generated Images</h3>
+            <div id="img-gallery" class="media-grid">
+                <div class="empty-state">No images generated yet.</div>
+            </div>
+            <div id="img-pagination" class="pagination"></div>
         </div>
     </section>
 
@@ -193,6 +241,13 @@
                            style="width:100%;padding:8px;background:#0f0f14;border:1px solid #333;color:#e0e0e0;border-radius:6px;font-size:0.85rem">
                     <small style="color:#666;font-size:0.7rem">Leave empty for AI auto-generation. One text per clip.</small>
                 </div>
+            </div>
+
+            <div class="form-group" style="margin-top:12px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="render-cover">
+                    <span>Generate AI cover image</span>
+                </label>
             </div>
 
             <button id="btn-do-render" class="btn btn-primary btn-full" onclick="doRender()">  Start Render</button>
