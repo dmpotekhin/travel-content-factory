@@ -141,6 +141,17 @@ class AbacusImageClient(BaseImageClient):
                 resp.raise_for_status()
                 data = resp.json()
                 break
+            except httpx.HTTPStatusError as e:
+                last_error = e
+                error_body = e.response.text[:500] if e.response else "no body"
+                logger.warning(
+                    f"Abacus AI attempt {attempt + 1}/{max_retries} failed: "
+                    f"status={e.response.status_code if e.response else '?'}, "
+                    f"body={error_body}"
+                )
+                if attempt < max_retries - 1:
+                    import asyncio
+                    await asyncio.sleep(2 ** attempt)
             except (httpx.HTTPError, KeyError, IndexError) as e:
                 last_error = e
                 logger.warning(f"Abacus AI attempt {attempt + 1}/{max_retries} failed: {e}")
@@ -148,7 +159,17 @@ class AbacusImageClient(BaseImageClient):
                     import asyncio
                     await asyncio.sleep(2 ** attempt)
         else:
-            raise RuntimeError(f"Abacus AI failed after {max_retries} attempts: {last_error}")
+            # Try to extract Abacus error message from response body
+            detail = str(last_error)
+            if hasattr(last_error, 'response') and last_error.response is not None:
+                try:
+                    body = last_error.response.json()
+                    abacus_msg = body.get("error", "")
+                    if abacus_msg:
+                        detail = abacus_msg
+                except Exception:
+                    pass
+            raise RuntimeError(f"Abacus AI failed after {max_retries} attempts: {detail}")
 
         # Extract base64 image from response
         try:
