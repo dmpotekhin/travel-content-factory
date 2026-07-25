@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="FastAPI">
   <img src="https://img.shields.io/badge/frontend-Vanilla_JS-F7DF1E?logo=javascript&logoColor=black" alt="Vanilla JS">
   <img src="https://img.shields.io/badge/AI-DeepSeek-4B32C3?logo=openai&logoColor=white" alt="DeepSeek">
+  <img src="https://img.shields.io/badge/Image_AI-Abacus-7C5CFC?logo=abacus&logoColor=white" alt="Abacus AI">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 </p>
 
@@ -92,6 +93,22 @@
 -   Видео сохраняется в `exports/`
 -   Кнопка **Download** в браузере
 
+### 🎨 Image Factory
+
+```
+Ты: «Sunset over Santorini, cinematic style»
+   ↓
+ Abacus AI:  Генерация изображения
+   ↓
+ Результат:  PNG в галерее, доступен по URL
+```
+
+- 🖼️ Генерация изображений через Abacus AI (FLUX, MidJourney, DALL-E, Nano Banana Pro)
+- Выбор формата: Square / Landscape / Portrait
+- Галерея с пагинацией — все сгенерированные изображения в одном месте
+- 🎬 **AI-обложки для проектов** — галочка «Generate cover» в диалоге рендера
+- Хранение в `generated/`, раздача через `/api/images/file/{filename}`
+
 ---
 
 ##   Стек
@@ -108,7 +125,7 @@
     </tr>
     <tr>
       <td align="center"> <b>AI</b></td>
-      <td>DeepSeek API (httpx)  •  Архитектура под замену на Ollama / llama.cpp</td>
+      <td>DeepSeek API (httpx) + Abacus AI (изображения)  •  Архитектура под замену на Ollama / llama.cpp</td>
     </tr>
     <tr>
       <td align="center"> <b>Медиа</b></td>
@@ -153,6 +170,7 @@ chmod +x start.sh
 | Переменная | Назначение | По умолчанию |
 |---|---|---|
 | `DEEPSEEK_API_KEY` | Ключ DeepSeek API (  для AI-функций) | *обязательно* |
+| `ABACUS_AI_API_KEY` | Ключ Abacus AI для генерации изображений | *опционально* |
 | `MEDIA_ROOT` | Куда сохраняются загруженные файлы | `./uploads` |
 | `EXPORT_ROOT` | Куда рендерятся финальные видео | `./exports` |
 | `DATABASE_URL` | Строка подключения к БД | *авто-вычисляется* |
@@ -204,6 +222,15 @@ chmod +x start.sh
 | `POST` | `/api/ai/generate` | Сгенерировать сценарий + пост + хэштеги |
 | `POST` | `/api/ai/script-to-scenes` | Разбить текст на сцены |
 
+### 🎨 Изображения
+
+| Метод | Путь | Что делает |
+|---|---|---|
+| `POST` | `/api/images/generate` | Сгенерировать изображение (prompt, aspect_ratio, model) |
+| `GET` | `/api/images/list` | Список сгенерированных изображений с пагинацией |
+| `GET` | `/api/images/file/{filename}` | Отдать файл изображения |
+| `POST` | `/api/images/generate-cover` | Сгенерировать AI-обложку для проекта |
+
 ###   Система
 
 | Метод | Путь |
@@ -225,20 +252,23 @@ travel-content-factory/
 │   │   ├── media.py              /api/media/*
 │   │   ├── projects.py           /api/projects/*  +  auto-match  +  render
 │   │   ├── ai.py                 /api/ai/*  +  DeepSeek content generation
-│   │   └── music.py              /api/music/*  +  upload/list/delete
+│   │   ├── music.py              /api/music/*  +  upload/list/delete
+│   │   └── images.py             /api/images/*  +  Abacus AI генерация
 │   └── services/
 │       ├── scanner.py            exiftool → EXIF, GPS, дата, размер
-│       ├── ffmpeg.py             trim, concat, overlay_audio, normalize_audio
-│       └── deepseek.py           BaseAIClient → DeepSeekClient (retry, JSON mode)
+│       ├── ffmpeg.py             trim, concat, overlay_audio, normalize_audio, drawtext
+│       ├── deepseek.py           BaseAIClient → DeepSeekClient (retry, JSON mode)
+│       └── abacus.py             Abacus AI → FLUX, MidJourney, DALL-E генерация
 │
 ├──   frontend/
-│   ├── index.html                SPA: Archive  |  Projects  |  Factory
+│   ├── index.html                SPA: Archive  |  Projects  |  Factory  |  Image Factory
 │   ├── css/style.css             Тёмная тема, responsive grid
 │   └── js/app.js                 Fetch API, модалки, drag & drop
 │
 ├──   uploads/                    Загруженные медиа
 ├──   exports/                    Готовые ролики
 ├──   music/                      Фоновая музыка (.mp3)
+├──   generated/                  AI-сгенерированные изображения
 ├──   data/                       SQLite travel_factory.db
 │
 ├── requirements.txt
@@ -252,6 +282,7 @@ travel-content-factory/
 ##   Архитектурные фишки
 
 -   **BaseAIClient** — абстрактный AI-бэкенд. Сейчас DeepSeek, завтра Ollama — замена в 2 строки
+- 🎨 **BaseImageClient** — абстрактный клиент для генерации изображений. Сейчас Abacus AI (FLUX, MidJourney, DALL-E)
 -   **Без миграций** — таблицы создаются при старте (`Base.metadata.create_all`). Alembic добавится когда нужно
 - ⚡ **Eager loading** — `selectinload` для связей, никаких `DetachedInstanceError`
 -   **FFmpeg CPU-only** — `libx264`, `-preset fast`, без CUDA/VideoToolbox
@@ -292,6 +323,7 @@ mcp_servers:
 
 ##   Roadmap
 
+- [x] 🎨 AI-генерация изображений (Abacus AI: FLUX, MidJourney, DALL-E)
 - [ ] PostgreSQL вместо SQLite (одна строка в `.env`)
 - [ ] Celery / фоновая очередь рендера
 - [ ] Ollama / llama.cpp вместо DeepSeek API
