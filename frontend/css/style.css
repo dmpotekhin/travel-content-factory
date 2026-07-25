@@ -410,3 +410,33 @@ body {
     font-family: monospace;
     font-size: 0.82rem;
 }
+
+/* ── Image Factory ────────────────────────────────────────── */
+.gallery-section {
+    border-top: 1px solid #222;
+    padding-top: 20px;
+    margin-top: 30px;
+}
+.gallery-section h3 {
+    color: #a0a0b0;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+#img-result img {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+.img-meta {
+    color: #888;
+    font-size: 0.75rem;
+    margin-top: 8px;
+}
+.img-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
